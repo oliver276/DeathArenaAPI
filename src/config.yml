@@ -1,0 +1,34 @@
+joinMessage: '&6&lYou joined KitPvP!'
+leaveMessage: '&5&lYou left KitPvP!'
+TNTFuseTicks: 40
+foodLevel: 20
+keepFood: true
+SignStart: '[KitPvP]'
+SignColor: '&1'
+CobwebDestroyTimeInSeconds: 30
+FireDestroyTimeTicks: 200
+disallowItemDropping: true
+denyItemPickup: true
+noItemDropMessage: '&4You are not allowed to drop items here, if you have a problem then try again.'
+commandDenied: '&4Access to this command has been blocked.'
+broadcastKill: true
+onlyInGame: false
+useActualPlayerNamesInTheKillMessage: true
+killMessage: '&5[&6KitPvP&5] &9%killername% on %health% (%hearts% hearts) &8just killed &9%victimname% &8with the %killerkit% kit.'
+DropItemOnDeath: false
+DropItemID: 322
+DropItemDamageValue: 1
+DropItemRegenPotency: 3
+DropItemRegenDuration: 40
+Stats_kills_self: ' &2Your kills: %kills%'
+Stats_deaths_self: ' &2Your deaths: %deaths%'
+Stats_KillToDeathRatio_self: ' &2Your K/D ratio: %KDR%'
+Stats_kills_other: ' &2%playername% kills: %kills%'
+Stats_deaths_other: ' &2%playername% deaths: %deaths%'
+Stats_KillToDeathRatio_other: ' &2%playername% K/D ratio: %KDR%'
+CommandWhiteList:
+  - money
+  - list
+EnableTNTInTheseWorlds:
+  - KitPvP
+  - DeathArena
