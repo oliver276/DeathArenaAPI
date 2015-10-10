@@ -30,6 +30,9 @@ EnableMoneyGainOnKill: true
 MoneyEarnedPerKill: 50
 EnableMoneyLossOnDeath: false
 MoneyLostPerDeath: 25
+EnableLeaveCombatRestriction: false
+LeaveCombatRestrictionTimeoutInMilliseconds: 10000
+LeaveCombatMessage: '&1Sorry, you have not been out of combat long enough to leave.'
 CommandWhiteList:
   - money
   - list

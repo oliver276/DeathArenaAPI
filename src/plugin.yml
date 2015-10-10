@@ -7,7 +7,7 @@ main: me.oliver276.deatharena.Main
 softdepend: [Vault]
 commands:
   kitpvp:
-    usage: /<commands> <args> [args...]
+    usage: /<command> <args> [args...]
     description: kitpvp main command
     permission: kitpvp.root
     permission-message: You do not have \'kitpvp.root\'.

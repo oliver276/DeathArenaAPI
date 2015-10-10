@@ -15,14 +15,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -152,21 +150,28 @@ public class Main extends JavaPlugin implements Listener{
     }
 
     public void Leave(Fighter fighter){
-        Player player = Bukkit.getPlayer(fighter.getName());
-        dapi.removeFighter(fighter);
-        player.getInventory().setArmorContents(null);
-        player.getInventory().setArmorContents(null);
-        for (PotionEffectType potionEffect : PotionEffectType.values()){
-            try {
-                player.removePotionEffect(potionEffect);
-            } catch (Exception ignore){}
+        if(((System.currentTimeMillis() -
+                fighter.getTimeOfLastDamage()) < getConfig().getInt("LeaveCombatRestrictionTimeoutInMilliseconds")) ||
+                !getConfig().getBoolean("EnableLeaveCombatRestriction")) {
+            Player player = Bukkit.getPlayer(fighter.getName());
+            dapi.removeFighter(fighter);
+            player.getInventory().setArmorContents(null);
+            player.getInventory().setArmorContents(null);
+            for (PotionEffectType potionEffect : PotionEffectType.values()) {
+                try {
+                    player.removePotionEffect(potionEffect);
+                } catch (Exception ignore) {
+                }
+            }
+            player.teleport(fighter.getOldLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN);
+            player.getInventory().setArmorContents(fighter.getOldArmour());
+            player.getInventory().setContents(fighter.getOldInventory());
+            player.setHealth(fighter.getOldHealth());
+            player.sendMessage(translateColourCodes(getConfig().getString("leaveMessage")));
+            player.updateInventory();
+        } else {
+            Bukkit.getPlayer(fighter.getName()).sendMessage(translateColourCodes((getConfig().getString("LeaveCombatMessage"))));
         }
-        player.teleport(fighter.getOldLocation(), PlayerTeleportEvent.TeleportCause.PLUGIN);
-        player.getInventory().setArmorContents(fighter.getOldArmour());
-        player.getInventory().setContents(fighter.getOldInventory());
-        player.setHealth(fighter.getOldHealth());
-        player.sendMessage(translateColourCodes(getConfig().getString("leaveMessage")));
-        player.updateInventory();
     }
 
 
@@ -213,6 +218,16 @@ public class Main extends JavaPlugin implements Listener{
         }
         if (dapi.testForFighter(e.getPlayer().getName())){
             e.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onTakeDamage(EntityDamageEvent e){
+        if (e.getEntity() instanceof Player){
+            Player victim = (Player) e.getEntity();
+            if (dapi.checkFighter(victim)){
+                dapi.getFighter(victim).setTimeOfLastDamage(System.currentTimeMillis());
+            }
         }
     }
 

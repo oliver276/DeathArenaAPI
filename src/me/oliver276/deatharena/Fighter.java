@@ -21,6 +21,8 @@ public class Fighter {
     private Location oldLocation = null;
     private Double health = 0.0;
 
+    private long TimeOfLastDamage = 0;
+
 
     public Fighter(Player player, Kit kit, Arena arena){
         this.name = player.getName();
@@ -33,6 +35,13 @@ public class Fighter {
         health = player.getHealth();
         displayName = player.getName();
         oldKit = kit;
+    }
+    public long getTimeOfLastDamage(){
+        return TimeOfLastDamage;
+    }
+
+    public void setTimeOfLastDamage(long time){
+        TimeOfLastDamage = time;
     }
 
     public Kit getOldKit(){
