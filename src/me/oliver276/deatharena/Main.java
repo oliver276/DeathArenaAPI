@@ -1,5 +1,6 @@
 package me.oliver276.deatharena;
 
+import net.milkbowl.vault.economy.Economy;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -23,6 +24,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -48,6 +50,18 @@ public class Main extends JavaPlugin implements Listener{
     int itemDropPotAmplifier;
     int itemDropPotDuration;
     short itemDropDamage;
+
+    public static Economy serverEcon = null;
+
+    private boolean setupEconomy()
+    {
+        RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+        if (economyProvider != null) {
+            serverEcon = economyProvider.getProvider();
+        }
+
+        return (serverEcon != null);
+    }
 
     public String translateColourCodes(String string){
         return string.replace("&","§");
@@ -415,6 +429,12 @@ public class Main extends JavaPlugin implements Listener{
         if (killedByFighter){
             addKill(dapi.getFighter(e.getEntity().getKiller()));
             Fighter killer = dapi.getFighter(e.getEntity().getKiller());
+            if (getConfig().getBoolean("EnableMoneyGainOnKill")){ //to give kill gold
+                serverEcon.bankDeposit(killer.getName(),getConfig().getDouble("MoneyEarnedPerKill"));
+            }
+            if (getConfig().getBoolean("EnableMoneyLossOnDeath")){
+                serverEcon.bankWithdraw(victim.getName(),getConfig().getDouble("MoneyLostPerDeath"));
+            }
             if (getConfig().getBoolean("broadcastKill")){
                 boolean inGame = getConfig().getBoolean("onlyInGame");
                 boolean realName = getConfig().getBoolean("useActualPlayerNamesInTheKillMessage");

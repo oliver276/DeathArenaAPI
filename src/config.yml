@@ -26,6 +26,10 @@ Stats_KillToDeathRatio_self: ' &2Your K/D ratio: %KDR%'
 Stats_kills_other: ' &2%playername% kills: %kills%'
 Stats_deaths_other: ' &2%playername% deaths: %deaths%'
 Stats_KillToDeathRatio_other: ' &2%playername% K/D ratio: %KDR%'
+EnableMoneyGainOnKill: true
+MoneyEarnedPerKill: 50
+EnableMoneyLossOnDeath: false
+MoneyLostPerDeath: 25
 CommandWhiteList:
   - money
   - list
