@@ -50,6 +50,7 @@ public class Main extends JavaPlugin implements Listener{
     short itemDropDamage;
 
     public static Economy serverEcon = null;
+    public boolean isEconomy = false;
 
     private boolean setupEconomy()
     {
@@ -82,6 +83,7 @@ public class Main extends JavaPlugin implements Listener{
         dapi.loadAllKits();
         dapi.loadAllArenas();
         loadAllStats();
+        setupEconomy();
         dropItemOnDeath = getConfig().getBoolean("DropItemOnDeath");
         itemDropID = getConfig().getInt("DropItemID");
         itemDropPotAmplifier = getConfig().getInt("DropItemRegenPotency");
@@ -111,7 +113,7 @@ public class Main extends JavaPlugin implements Listener{
     }
 
     public void saveStats(UUID uuid){
-        FileConfiguration cfg = null;
+        FileConfiguration cfg;
         File file1 = new File(this.getDataFolder() + "/stats/");
         file1.mkdirs();
         File file = new File(this.getDataFolder() + "/stats/all.stats");
@@ -177,7 +179,7 @@ public class Main extends JavaPlugin implements Listener{
 
     @EventHandler
     public void onItemPickup(PlayerPickupItemEvent e) {
-        if (e.getItem().equals(Material.ARROW)) return;
+        if (e.getItem().getItemStack().getType().equals(Material.ARROW)) return;
         if (dapi.testForFighter(e.getPlayer().getName())) {
             if (e.getItem().getItemStack().getTypeId() == itemDropID){
                 PotionEffect potion = new PotionEffect(PotionEffectType.REGENERATION,itemDropPotDuration,itemDropPotAmplifier);
@@ -444,11 +446,19 @@ public class Main extends JavaPlugin implements Listener{
         if (killedByFighter){
             addKill(dapi.getFighter(e.getEntity().getKiller()));
             Fighter killer = dapi.getFighter(e.getEntity().getKiller());
-            if (getConfig().getBoolean("EnableMoneyGainOnKill")){ //to give kill gold
-                serverEcon.bankDeposit(killer.getName(),getConfig().getDouble("MoneyEarnedPerKill"));
+            if (getConfig().getBoolean("EnableMoneyGainOnKill")) { //to give kill gold
+                if (!isEconomy) {
+                    serverEcon.bankDeposit(killer.getName(), getConfig().getDouble("MoneyEarnedPerKill"));
+                } else {
+                    getServer().getLogger().warning("You have enabled money on kills, but we couldn't find Vault. No money was lost/earnt for this.");
+                }
             }
-            if (getConfig().getBoolean("EnableMoneyLossOnDeath")){
-                serverEcon.bankWithdraw(victim.getName(),getConfig().getDouble("MoneyLostPerDeath"));
+            if (getConfig().getBoolean("EnableMoneyLossOnDeath")) {
+                if (!isEconomy) {
+                    serverEcon.bankWithdraw(victim.getName(), getConfig().getDouble("MoneyLostPerDeath"));
+                } else {
+                    getServer().getLogger().warning("You have enabled money on deaths, but we couldn't find Vault. No money was lost/earnt for this.");
+                }
             }
             if (getConfig().getBoolean("broadcastKill")){
                 boolean inGame = getConfig().getBoolean("onlyInGame");
