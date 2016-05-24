@@ -241,9 +241,9 @@ public class DeathArenaAPI{
         arena.removeSpawn(spawnPoint);
     }
 
-    public Fighter getFighter(Player player){
+    public Fighter getFighter(String playername){
         for (Fighter f : fighterList){
-            if (f.getName().equalsIgnoreCase(player.getName())){
+            if (f.getName().equalsIgnoreCase(playername)){
                 return f;
             }
         }

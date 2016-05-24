@@ -83,7 +83,7 @@ public class Main extends JavaPlugin implements Listener{
         dapi.loadAllKits();
         dapi.loadAllArenas();
         loadAllStats();
-        setupEconomy();
+        isEconomy = setupEconomy();
         dropItemOnDeath = getConfig().getBoolean("DropItemOnDeath");
         itemDropID = getConfig().getInt("DropItemID");
         itemDropPotAmplifier = getConfig().getInt("DropItemRegenPotency");
@@ -209,7 +209,7 @@ public class Main extends JavaPlugin implements Listener{
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent event){
         if (dapi.testForFighter(event.getPlayer().getName())){
-            Leave(dapi.getFighter(event.getPlayer()));
+            Leave(dapi.getFighter(event.getPlayer().getName()));
         }
     }
 
@@ -228,7 +228,7 @@ public class Main extends JavaPlugin implements Listener{
         if (e.getEntity() instanceof Player){
             Player victim = (Player) e.getEntity();
             if (dapi.checkFighter(victim)){
-                dapi.getFighter(victim).setTimeOfLastDamage(System.currentTimeMillis());
+                dapi.getFighter(victim.getName()).setTimeOfLastDamage(System.currentTimeMillis());
             }
         }
     }
@@ -358,7 +358,7 @@ public class Main extends JavaPlugin implements Listener{
         }
         if (e.getMessage().equalsIgnoreCase("/leave")) {
             if (dapi.testForFighter(e.getPlayer().getName())) {
-                Leave(dapi.getFighter(e.getPlayer()));
+                Leave(dapi.getFighter(e.getPlayer().getName()));
                 e.setCancelled(true);
                 return;
             }
@@ -427,7 +427,7 @@ public class Main extends JavaPlugin implements Listener{
         }
         reloadConfig();
         e.setDeathMessage(null);
-        Fighter victim = dapi.getFighter(e.getEntity());
+        Fighter victim = dapi.getFighter(e.getEntity().getName());
         boolean killedByFighter;
         try {
             killedByFighter = dapi.testForFighter(e.getEntity().getKiller().getName());
@@ -444,17 +444,17 @@ public class Main extends JavaPlugin implements Listener{
             } catch (Exception ignore){}
         }
         if (killedByFighter){
-            addKill(dapi.getFighter(e.getEntity().getKiller()));
-            Fighter killer = dapi.getFighter(e.getEntity().getKiller());
+            addKill(dapi.getFighter(e.getEntity().getKiller().getName()));
+            Fighter killer = dapi.getFighter(e.getEntity().getKiller().getName());
             if (getConfig().getBoolean("EnableMoneyGainOnKill")) { //to give kill gold
-                if (!isEconomy) {
+                if (isEconomy) {
                     serverEcon.bankDeposit(killer.getName(), getConfig().getDouble("MoneyEarnedPerKill"));
                 } else {
                     getServer().getLogger().warning("You have enabled money on kills, but we couldn't find Vault. No money was lost/earnt for this.");
                 }
             }
             if (getConfig().getBoolean("EnableMoneyLossOnDeath")) {
-                if (!isEconomy) {
+                if (isEconomy) {
                     serverEcon.bankWithdraw(victim.getName(), getConfig().getDouble("MoneyLostPerDeath"));
                 } else {
                     getServer().getLogger().warning("You have enabled money on deaths, but we couldn't find Vault. No money was lost/earnt for this.");
@@ -508,7 +508,7 @@ public class Main extends JavaPlugin implements Listener{
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onReSpawn(PlayerRespawnEvent e){
         if (!(dapi.testForFighter(e.getPlayer().getName()))) return;
-        Fighter fighter = dapi.getFighter(e.getPlayer());
+        Fighter fighter = dapi.getFighter(e.getPlayer().getName());
         final Player player = e.getPlayer();
         Arena arena = fighter.getArena();
         final Kit kit = fighter.getKit();
@@ -571,7 +571,7 @@ public class Main extends JavaPlugin implements Listener{
                             player.sendMessage(ChatColor.RED + "You're not in a game.");
                             return;
                         }
-                        Leave(dapi.getFighter(player));
+                        Leave(dapi.getFighter(player.getName()));
                     } else if (sign.getLine(1).equalsIgnoreCase("kit")){
                         if (sign.getLine(2).isEmpty()) {
                             e.getPlayer().sendMessage(ChatColor.RED + "That sign does not have the correct parameters.");
@@ -580,8 +580,8 @@ public class Main extends JavaPlugin implements Listener{
                         }
                         String kitName, arenaName;
                         kitName = sign.getLine(2);
-                        arenaName = dapi.getFighter(player).getArena().getName();
-                        Fighter fighter = dapi.getFighter(player);
+                        arenaName = dapi.getFighter(player.getName()).getArena().getName();
+                        Fighter fighter = dapi.getFighter(player.getName());
                         if (!dapi.testKit(kitName)) {
                             e.getPlayer().sendMessage(ChatColor.RED + "That kit (line 3) was not recognised.");
                             return;
@@ -600,14 +600,14 @@ public class Main extends JavaPlugin implements Listener{
                         fighter.setKit(kit);
                         player.sendMessage(ChatColor.BLUE + "Your kit will change next time you respawn.");
                     } else if (sign.getLine(1).equalsIgnoreCase("arena")){
-                        Fighter fighter = dapi.getFighter(player);
+                        Fighter fighter = dapi.getFighter(player.getName());
                         if (sign.getLine(2).isEmpty()) {
                             e.getPlayer().sendMessage(ChatColor.RED + "That sign does not have the correct parameters.");
                             e.getPlayer().sendMessage(ChatColor.BLUE + translateColourCodes("It should contain the arena."));
                             return;
                         }
                         String kitName, arenaName;
-                        kitName = dapi.getFighter(player).getName();
+                        kitName = dapi.getFighter(player.getName()).getName();
                         arenaName = sign.getLine(3);
                         if (!dapi.testArena(arenaName)) {
                             e.getPlayer().sendMessage(ChatColor.RED + "The arena (Line 3) was not recognised.");
@@ -726,7 +726,7 @@ public class Main extends JavaPlugin implements Listener{
                 }
                 Player player = (Player) sender;
                 if (dapi.testForFighter(player.getName())){
-                    Leave(dapi.getFighter(player));
+                    Leave(dapi.getFighter(player.getName()));
                 } else {
                     sender.sendMessage(ChatColor.RED + "You're not in-game.");
                 }
