@@ -120,7 +120,24 @@ public class DeathArenaAPI{
             locList.add(new Location(Bukkit.getWorld(world), x, y, z, yaw, pitch));
         }
         String worldn = cfg.getString("0.world");
-        Arena arena = new Arena(locList,name,worldn);
+        me.oliver276.deatharena.ArenaEconomy arenaEcon;
+        if (cfg.getKeys(false).contains("economy")){
+            int costToJoinArena = cfg.getInt("economy.costToJoin");
+            int gainOnKill = cfg.getInt("economy.gainOnKill");
+            int lossOnDeath = cfg.getInt("economy.lossOnDeath");
+            arenaEcon = new ArenaEconomy(costToJoin,gainOnKill,lossOnDeath);   //the syntax should be: (cost,gained,lost)
+        } else { 
+            int gain = 0;
+            int loss = 0;
+            if (getConfig().getBoolean("EnableMoneyGainOnKill"){
+                gain = getConfig().getBoolean("MoneyEarnedPerKill");
+            }
+            if (getConfig().getBoolean("EnableMoneyLossOnDeath"){
+                loss = getConfig().getInt("MoneyLossPerKill");
+            }
+            arenaEcon = new ArenaEconomy(0,gain,loss);
+        }
+        Arena arena = new Arena(locList,name,worldn,arenaEcon); //add the ArenaEcon for the construction of the Arena object.
         for (String str : strList){
             try{
                 arena.addAllowedKit(getKit(str));
