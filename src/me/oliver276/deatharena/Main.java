@@ -980,7 +980,7 @@ public class Main extends JavaPlugin implements Listener{
                     }
                     dapi.denyArena(dapi.getKit(kitName),arena);
                     sender.sendMessage(ChatColor.GRAY + "Success : Kit was removed in arena!");
-                }else if (arg1.equalsIgnoreCase("moneyOnKill")){
+                }else if (action.equalsIgnoreCase("moneyOnKill")){
                     if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
                         sender.sendMessage(ChatColor.RED + "Access denied.");
                         return true;
@@ -997,7 +997,7 @@ public class Main extends JavaPlugin implements Listener{
                     } catch (Exception ex){
                         sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
                     }
-                }else if (arg1.equalsIgnoreCase("moneyOnDeath")){
+                }else if (action.equalsIgnoreCase("moneyOnDeath")){
                     if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
                         sender.sendMessage(ChatColor.RED + "Access denied.");
                         return true;
@@ -1014,7 +1014,7 @@ public class Main extends JavaPlugin implements Listener{
                     } catch (Exception ex){
                         sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
                     }
-                }else if (arg1.equalsIgnoreCase("moneyForJoin")){
+                }else if (action.equalsIgnoreCase("moneyForJoin")){
                     if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
                         sender.sendMessage(ChatColor.RED + "Access denied.");
                         return true;
