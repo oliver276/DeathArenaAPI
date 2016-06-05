@@ -57,6 +57,9 @@ public class DeathArenaAPI{
     public void saveArena(Arena arena) {
         FileConfiguration cfg = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder() + "/arenas/" + arena.getName() + ".arena"));
         cfg.set("AllowedKits" , arena.getKitWhiteList());
+        cfg.set("joinMoney", arena.getArenaEcon().getJoinMoney());
+        cfg.set("killMoney", arena.getArenaEcon().getKillMoney());
+        cfg.get("leaveMoney", arena.getArenaEcon().getDeathMoney());
         int x = 0;
         for (Location loc : arena.getSpawns()){
             String xi = String.valueOf(x);
@@ -108,7 +111,7 @@ public class DeathArenaAPI{
     public void loadArena(String name){
         ArrayList<Location> locList = new ArrayList<Location>();
         FileConfiguration cfg = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder() + "/arenas/" + name + ".arena"));
-        List<String> strList = (List<String>) cfg.getList("AllowedKits");
+        ArrayList<String> strList = (ArrayList<String>) cfg.getList("AllowedKits");
         int p = cfg.getInt("int");
         for (int i = 0; i <= p; i++){
             double x = cfg.getDouble(i + ".x");
@@ -120,12 +123,20 @@ public class DeathArenaAPI{
             locList.add(new Location(Bukkit.getWorld(world), x, y, z, yaw, pitch));
         }
         String worldn = cfg.getString("0.world");
-        Arena arena = new Arena(locList,name,worldn);
-        for (String str : strList){
+       // Arena arena = new Arena(locList,name,worldn);
+        ArenaEcon arenaEcon;
+        try {
+            arenaEcon = new ArenaEcon(cfg.getInt("joinMoney"),cfg.getInt("killMoney"),cfg.getInt("deathMoney"));
+        } catch (Exception ex) {
+            arenaEcon = new ArenaEcon(0,0,0);
+        }
+        Arena arena = new Arena(locList,name,worldn,strList,arenaEcon);
+       /* for (String str : strList){
             try{
                 arena.addAllowedKit(getKit(str));
             }catch(Exception ignored){}
         }
+        */
         arenaArrayList.add(arena);
     }
 

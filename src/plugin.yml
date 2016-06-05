@@ -30,26 +30,29 @@ permissions:
       kitpvp.join: true
   kitpvp.root:
     default: true
-    description: allow access to the root command
+    description: allow access to the root command.
   kitpvp.join:
     default: true
     description: allow a player to join.
   kitpvp.kit.*:
     default: true
-    description: Allow a player to join with ALL the kits
+    description: Allow a player to join with ALL the kits.
   kitpvp.arena.*:
     default: true
-    description: Allow a player to join ALL the arenas
+    description: Allow a player to join ALL the arenas.
   kitpvp.managearena:
     default: op
-    description: Allow a player to modify arenas
+    description: Allow a player to modify arenas.
+  kitpvp.modifyEconomy:
+    default: op
+    description: Allow a player to modify the economy of an arena.
   kitpvp.setinv:
     default: op
-    description: Allow a player to create kits
+    description: Allow a player to create kits.
   kitpvp.delarena:
     default: op
     description: Allow a player player to delete an arena.
   kitpvp.addarena:
     default: op
-    description: Allow a player to create an arena
+    description: Allow a player to create an arena.
 

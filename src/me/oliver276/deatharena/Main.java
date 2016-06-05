@@ -16,11 +16,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.MetadataValue;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -35,22 +34,18 @@ import java.util.Random;
 import java.util.UUID;
 
 public class Main extends JavaPlugin implements Listener{
+    public static Economy serverEcon = null;
+    public boolean isEconomy = false;
     Plugin plugin = this;
-
     DeathArenaAPI dapi = new DeathArenaAPI(this);
-
     ArrayList<Fighter> fighters = new ArrayList<Fighter>();
     HashMap<UUID,Integer> killMap = new HashMap<UUID, Integer>();
     HashMap<UUID,Integer> deathMap = new HashMap<UUID, Integer>();
-
     boolean dropItemOnDeath;
     int itemDropID;
     int itemDropPotAmplifier;
     int itemDropPotDuration;
     short itemDropDamage;
-
-    public static Economy serverEcon = null;
-    public boolean isEconomy = false;
 
     private boolean setupEconomy()
     {
@@ -324,6 +319,7 @@ public class Main extends JavaPlugin implements Listener{
                 World w = loc.getWorld();
                 TNTPrimed tntPrimed = (TNTPrimed) w.spawnEntity(loc, EntityType.PRIMED_TNT);
                 tntPrimed.setFuseTicks(getConfig().getInt("TNTFuseTicks"));
+                   tntPrimed.setMetadata("toNullify",new FixedMetadataValue(this,"TNTNullify"));
                 Location loc1 = e.getBlockPlaced().getLocation();
                 loc1.getWorld().playSound(loc, Sound.FUSE, 1.0F, 1.0F);
             }
@@ -334,12 +330,14 @@ public class Main extends JavaPlugin implements Listener{
     public void onBlockIgnite(BlockIgniteEvent e){
         final Location loc = e.getBlock().getLocation();
         if (e.getCause().equals(BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL)){
-            Bukkit.getScheduler().scheduleSyncDelayedTask(this, new BukkitRunnable() {
-                @Override
-                public void run() {
-                    loc.getWorld().getBlockAt(loc).setType(Material.AIR);
-                }
-            },getConfig().getInt("FireDestroyTimeTicks"));
+            if (dapi.checkFighter(e.getPlayer())) {
+                Bukkit.getScheduler().scheduleSyncDelayedTask(this, new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        loc.getWorld().getBlockAt(loc).setType(Material.AIR);
+                    }
+                }, getConfig().getInt("FireDestroyTimeTicks"));
+            }
         }
     }
 
@@ -376,28 +374,19 @@ public class Main extends JavaPlugin implements Listener{
 
     }
 
-
     @EventHandler
     public void onEntityExplodeEvent(EntityExplodeEvent e){
 
         ArrayList<World> worldList = new ArrayList<World>();
-        for (String s : getConfig().getStringList("EnableTNTInTheseWorlds")){
-            worldList.add(Bukkit.getWorld(s));
-        }
-        if (worldList.contains(e.getLocation().getWorld())){
-            try{
-                e.setCancelled(true);
 
-            }catch (Exception ex){
-                e.setCancelled(true);
-                return;
-            }
             if (e.getEntity().getType().equals(EntityType.PRIMED_TNT)){
-                e.setCancelled(true);
-                World w = e.getEntity().getLocation().getWorld();
-                w.createExplosion(e.getLocation(), 0F);
+                if (e.getEntity().hasMetadata("toNullify")) {
+                    e.setCancelled(true);
+                    World w = e.getEntity().getLocation().getWorld();
+                    w.createExplosion(e.getLocation(), 0F);
+                }
             }
-        }
+
     }
 
     public void addDeath(Fighter fighter){
@@ -446,7 +435,27 @@ public class Main extends JavaPlugin implements Listener{
         if (killedByFighter){
             addKill(dapi.getFighter(e.getEntity().getKiller().getName()));
             Fighter killer = dapi.getFighter(e.getEntity().getKiller().getName());
-            if (getConfig().getBoolean("EnableMoneyGainOnKill")) { //to give kill gold
+            Arena kArena = killer.getArena();
+            Arena vArena = victim.getArena();
+            if (kArena.getArenaEcon().getKillMoney() > 0){ //give kill gold.
+                if (isEconomy){
+                    serverEcon.bankDeposit(killer.getName(), kArena.getArenaEcon().getKillMoney());
+                } else {
+                    getServer().getLogger().warning("You've set the " + kArena.getName() + " arena to give " + 
+                        kArena.getArenaEcon().getKillMoney() + " money on a kill, but vault was not found at startup.  " +
+                            "No money was given.");
+                }
+            }
+            if (vArena.getArenaEcon().getDeathMoney() > 0){
+                if (isEconomy){
+                    serverEcon.bankDeposit(victim.getName(), vArena.getArenaEcon().getDeathMoney());
+                } else {
+                    getServer().getLogger().warning("You've set the " + vArena.getName() + " arena to give " +
+                            vArena.getArenaEcon().getDeathMoney() + " money on a kill, but vault was not found at startup.  " +
+                            "No money was given.");
+                }
+            }
+            /*if (getConfig().getBoolean("EnableMoneyGainOnKill")) { //to give kill gold
                 if (isEconomy) {
                     serverEcon.bankDeposit(killer.getName(), getConfig().getDouble("MoneyEarnedPerKill"));
                 } else {
@@ -459,7 +468,7 @@ public class Main extends JavaPlugin implements Listener{
                 } else {
                     getServer().getLogger().warning("You have enabled money on deaths, but we couldn't find Vault. No money was lost/earnt for this.");
                 }
-            }
+            }*/
             if (getConfig().getBoolean("broadcastKill")){
                 boolean inGame = getConfig().getBoolean("onlyInGame");
                 boolean realName = getConfig().getBoolean("useActualPlayerNamesInTheKillMessage");
@@ -626,6 +635,29 @@ public class Main extends JavaPlugin implements Listener{
                         }
                         player.sendMessage(ChatColor.BLUE + "You will have the new arena next time you respawn.");
                         fighter.setArena(arena);
+                    } else if (sign.getLine(1).equalsIgnoreCase("stats")){
+                        UUID uuid = player.getUniqueId();
+                        String kills = translateColourCodes(getConfig().getString("Stats_kills_self"));
+                        if (killMap.containsKey(uuid)){
+                            kills = kills.replaceAll("%kills%",String.valueOf(killMap.get(uuid)));
+                        } else {
+                            kills = kills.replaceAll("%kills%","N/A");
+                        }
+                        player.sendMessage(kills);
+                        String deaths = translateColourCodes(getConfig().getString("Stats_deaths_self"));
+                        if (deathMap.containsKey(uuid)){
+                            deaths = deaths.replaceAll("%deaths%",String.valueOf(deathMap.get(uuid)));
+                        } else {
+                            deaths = deaths.replaceAll("%kills%","N/A");
+                        }
+                        player.sendMessage(deaths);
+                        String KDR = translateColourCodes(getConfig().getString("Stats_KillToDeathRatio_self"));
+                        if (killMap.containsKey(uuid) && deathMap.containsKey(uuid)){
+                            KDR = KDR.replaceAll("%KDR%",String.valueOf(Double.valueOf(killMap.get(uuid)) / (Double.valueOf(deathMap.get(uuid)))));
+                        } else {
+                            KDR = KDR.replaceAll("%kills%","N/A");
+                        }
+                        player.sendMessage(KDR);
                     }
                 }
             }
@@ -639,29 +671,29 @@ public class Main extends JavaPlugin implements Listener{
             Boolean isPlayer = sender instanceof Player;
             if (args.length == 0){
                 sender.sendMessage(ChatColor.GREEN + "=-=-=-= =-= KitPvP help =-= =-=-=-=");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp join <arena> <kit> " + ChatColor.AQUA + "Join an arena with the specified kit.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp leave " + ChatColor.BLUE + "Leaves your current game.");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp stats [Player] " + ChatColor.AQUA + "Tells you the [Player]'s stats. Yours if left blank.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp listKits " + ChatColor.BLUE + "Returns a list of the kits");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit> [arg] " + ChatColor.AQUA +
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp join <arena> <kit> " + ChatColor.BLUE + "Join an arena with the specified kit.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp leave " + ChatColor.BLUE + "Leaves your current game.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp stats [Player] " + ChatColor.BLUE + "Tells you the [Player]'s stats. Yours if left blank.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp listKits " + ChatColor.BLUE + "Returns a list of the kits");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit|moneyOnDeath|moneyOnKill|moneyForJoin> [arg] " + ChatColor.BLUE +
                         "Does the specified action to the <Arena>.  Use [arg] for \"addKit\" and for \"removeKit\".");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp setinv <KitName> [[-a]] " + ChatColor.BLUE + "Sets the [kit] to your inventory. Add -a to enable in all arenas.");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp addarena <arenaName> " + ChatColor.AQUA + "Adds an arena with a spawnpoint where you're standing.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp delArena <ArenaName> " + ChatColor.BLUE + "Permanently deletes an arena." +
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp setinv <KitName> [[-a]] " + ChatColor.BLUE + "Sets the [kit] to your inventory. Add -a to enable in all arenas.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp addarena <arenaName> " + ChatColor.BLUE + "Adds an arena with a spawnpoint where you're standing.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp delArena <ArenaName> " + ChatColor.BLUE + "Permanently deletes an arena." +
                         ChatColor.RED +  " Warning: cannot be undone.");
                 return true;
             }
             if (args[0].equalsIgnoreCase("help")){
                 sender.sendMessage(ChatColor.GREEN + "=-=-=-= =-= KitPvP help =-= =-=-=-=");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp join <arena> <kit> " + ChatColor.AQUA + "Join an arena with the specified kit.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp leave " + ChatColor.BLUE + "Leaves your current game.");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp stats [Player] " + ChatColor.AQUA + "Tells you the [Player]'s stats. Yours if left blank.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp setinv <KitName> [[-a]] " + ChatColor.BLUE + "Sets the [kit] to your inventory. Add -a to enable in all arenas.");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp addarena <arenaName> " + ChatColor.AQUA + "Adds an arena with a spawnpoint where you're standing.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp listKits " + ChatColor.BLUE + "Returns a list of the kits");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit> [arg] " + ChatColor.AQUA +
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp join <arena> <kit> " + ChatColor.BLUE + "Join an arena with the specified kit.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp leave " + ChatColor.BLUE + "Leaves your current game.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp stats [Player] " + ChatColor.BLUE + "Tells you the [Player]'s stats. Yours if left blank.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp setinv <KitName> [[-a]] " + ChatColor.BLUE + "Sets the [kit] to your inventory. Add -a to enable in all arenas.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp addarena <arenaName> " + ChatColor.BLUE + "Adds an arena with a spawnpoint where you're standing.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp listKits " + ChatColor.BLUE + "Returns a list of the kits");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit|moneyOnDeath|moneyOnKill|moneyForJoin> [arg] " + ChatColor.BLUE +
                         "Does the specified action to the <Arena>.  Use [arg] for \"addKit\" and for \"removeKit\".");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp delArena <ArenaName> " + ChatColor.BLUE + "Permanently deletes an arena." +
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp delArena <ArenaName> " + ChatColor.BLUE + "Permanently deletes an arena." +
                         ChatColor.RED +  " Warning: cannot be undone.");
                 return true;
             }
@@ -841,6 +873,8 @@ public class Main extends JavaPlugin implements Listener{
                 Player player = (Player) sender;
                 dapi.registerNewArena(player.getLocation(),args[1],player.getWorld().getName());
                 player.sendMessage(ChatColor.GREEN + "Added new arena.");
+                player.sendMessage(ChatColor.GREEN + "Modify things like the cost to join and the allowed kits using " + ChatColor.RED
+                + "/kitpvp managearena " + args[1] + ChatColor.GREEN + ".");
             }else if (arg1.equalsIgnoreCase("listKits")){
                 if (dapi.getKitList().isEmpty()){
                     sender.sendMessage(ChatColor.RED + "No kits exist.");
@@ -867,15 +901,15 @@ public class Main extends JavaPlugin implements Listener{
                 }
                 if (args.length < 3 ){
                     sender.sendMessage(ChatColor.RED + "Incorrect command syntax - not enough arguments.");
-                    sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit> [arg] " + ChatColor.AQUA +
+                    sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit|moneyOnDeath|moneyOnKill|moneyForJoin> [arg] " + ChatColor.AQUA +
                             "Does the specified action to the <Arena>.  Use [arg] for \"addKit\" and for \"removeKit\".");
                     return true;
                 }
                 String arenaName = args[1];
                 String action = args[2];
                 if (arenaName.equalsIgnoreCase("help") || action.equalsIgnoreCase("help")) {
-                    sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit> [arg] " + ChatColor.AQUA +
-                            "Does the specified action to the <Arena>.  Use [arg] for \"addKit\" and for \"removeKit\".");
+                    sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit|moneyOnDeath|moneyOnKill|moneyForJoin> [arg] " + ChatColor.AQUA +
+                            "Does the specified action to the <Arena>.  Use [arg] for \"moneyOnDeath\", \"moneyOnKill\", \"moneyForJoin\", \"addKit\" and for \"removeKit\".");
                     return true;
                 }
                 if (!dapi.testArena(arenaName)) {
@@ -967,18 +1001,72 @@ public class Main extends JavaPlugin implements Listener{
                 }
                 dapi.removeArena(dapi.getArena(ArenaName));
                 sender.sendMessage(ChatColor.BLUE + "Done, but you will still need to delete /kitpvp/arenas/" + ArenaName + ".arena");
+            }else if (arg1.equalsIgnoreCase("moneyOnKill")){
+                if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
+                    sender.sendMessage(ChatColor.RED + "Access denied.");
+                    return true;
+                }
+                Arena arena = dapi.getArena(args[2]);
+                if (args.length < 4){
+                    sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the kill money!.");
+                    sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getKillMoney());
+                    return true;
+                }
+
+                try {
+                    arena.getArenaEcon().setKillMoney(Integer.valueOf(args[3]));
+                    sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s kill gold updated to " + args[3]);
+                } catch (Exception ex){
+                    sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
+                }
+            }else if (arg1.equalsIgnoreCase("moneyOnDeath")){
+                if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
+                    sender.sendMessage(ChatColor.RED + "Access denied.");
+                    return true;
+                }
+                Arena arena = dapi.getArena(args[2]);
+                if (args.length < 4){
+                    sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the death money!.");
+                    sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getDeathMoney());
+                    return true;
+                }
+
+                try {
+                    arena.getArenaEcon().setDeathMoney(Integer.valueOf(args[3]));
+                    sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s death gold updated to " + args[3]);
+                } catch (Exception ex){
+                    sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
+                }
+            }else if (arg1.equalsIgnoreCase("moneyForJoin")){
+                if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
+                    sender.sendMessage(ChatColor.RED + "Access denied.");
+                    return true;
+                }
+                Arena arena = dapi.getArena(args[2]);
+                if (args.length < 4){
+                    sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the join cost!.");
+                    sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getJoinMoney());
+                    return true;
+                }
+
+                try {
+                    arena.getArenaEcon().setJoinMoney(Integer.valueOf(args[3]));
+                    sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s join cost updated to " + args[3]);
+                } catch (Exception ex){
+                    sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
+                }
             }else{
                 sender.sendMessage(ChatColor.RED + "Unknown KitPvP command.  Displaying help.");
                 sender.sendMessage(ChatColor.GREEN + "=-=-=-= =-= KitPvP help =-= =-=-=-=");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp join <arena> <kit> " + ChatColor.AQUA + "Join an arena with the specified kit.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp leave " + ChatColor.BLUE + "Leaves your current game.");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp stats [Player] " + ChatColor.AQUA + "Tells you the [Player]'s stats. Yours if left blank.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp setinv <KitName> [[-a]] " + ChatColor.BLUE + "Sets the [kit] to your inventory. Add -a to enable in all arenas.");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp addarena <arenaName> " + ChatColor.AQUA + "Adds an arena with a spawnpoint where you're standing.");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp listKits " + ChatColor.BLUE + "Returns a list of the kits");
-                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit> [arg] " + ChatColor.AQUA +
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp join <arena> <kit> " + ChatColor.BLUE + "Join an arena with the specified kit.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp leave " + ChatColor.BLUE + "Leaves your current game.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp stats [Player] " + ChatColor.BLUE + "Tells you the [Player]'s stats. Yours if left blank.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp setinv <KitName> [[-a]] " + ChatColor.BLUE + "Sets the [kit] to your inventory. Add -a to enable in all arenas.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp addarena <arenaName> " + ChatColor.BLUE + "Adds an arena with a spawnpoint where you're standing.");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp listKits " + ChatColor.BLUE + "Returns a list of the kits");
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp manageArena <ArenaName> <help|addSpawn|removeNearestSpawn|addKit|removeKit|moneyOnDeath|moneyOnKill|moneyForJoin> [arg] " + ChatColor.BLUE +
                         "Does the specified action to the <Arena>.  Use [arg] for \"addKit\" and for \"removeKit\".");
-                sender.sendMessage(ChatColor.DARK_BLUE + "/kitpvp delArena <ArenaName> " + ChatColor.BLUE + "Permanently deletes an arena." +
+                sender.sendMessage(ChatColor.DARK_AQUA + "/kitpvp delArena <ArenaName> " + ChatColor.BLUE + "Permanently deletes an arena." +
                         ChatColor.RED +  " Warning: cannot be undone.");
                 return true;
             }

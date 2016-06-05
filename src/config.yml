@@ -26,10 +26,6 @@ Stats_KillToDeathRatio_self: ' &2Your K/D ratio: %KDR%'
 Stats_kills_other: ' &2%playername% kills: %kills%'
 Stats_deaths_other: ' &2%playername% deaths: %deaths%'
 Stats_KillToDeathRatio_other: ' &2%playername% K/D ratio: %KDR%'
-EnableMoneyGainOnKill: true
-MoneyEarnedPerKill: 50
-EnableMoneyLossOnDeath: false
-MoneyLostPerDeath: 25
 EnableLeaveCombatRestriction: false
 LeaveCombatRestrictionTimeoutInMilliseconds: 10000
 LeaveCombatMessage: '&1Sorry, you have not been out of combat long enough to leave.'

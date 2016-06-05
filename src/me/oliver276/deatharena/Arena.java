@@ -11,11 +11,21 @@ public class Arena {
     String worldName = null;
     private ArrayList<Fighter> players = new ArrayList<Fighter>();
     private ArrayList<String> kitWhiteList = new ArrayList<String>();
+    private ArenaEcon arenaEcon;
 
     public Arena(Location spawn,String name, String worldName){
         spawns.add(spawn);
         this.name = name;
         this.worldName = worldName;
+        arenaEcon = new ArenaEcon(0,0,0);
+    }
+
+    public Arena(ArrayList<Location> spawns, String name, String worldName, ArrayList<String> kitWhiteList, ArenaEcon arenaEcon) {
+        this.spawns = spawns;
+        this.name = name;
+        this.worldName = worldName;
+        this.kitWhiteList = kitWhiteList;
+        this.arenaEcon = arenaEcon;
     }
 
     public void addAllowedKit(Kit kit){
@@ -26,10 +36,15 @@ public class Arena {
         kitWhiteList.remove(kit.getName());
     }
 
-    public Arena(ArrayList<Location> spawns,String name, String worldName){
+    /*public Arena(ArrayList<Location> spawns,String name, String worldName){
         this.spawns.addAll(spawns);
         this.name = name;
         this.worldName = worldName;
+    }
+    */
+
+    public ArenaEcon getArenaEcon() {
+        return arenaEcon;
     }
 
     public ArrayList<String> getKitWhiteList(){
