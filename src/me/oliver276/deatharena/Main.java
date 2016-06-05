@@ -980,6 +980,57 @@ public class Main extends JavaPlugin implements Listener{
                     }
                     dapi.denyArena(dapi.getKit(kitName),arena);
                     sender.sendMessage(ChatColor.GRAY + "Success : Kit was removed in arena!");
+                }else if (arg1.equalsIgnoreCase("moneyOnKill")){
+                    if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
+                        sender.sendMessage(ChatColor.RED + "Access denied.");
+                        return true;
+                    }
+                    if (args.length < 4){
+                        sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the kill money!.");
+                        sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getKillMoney());
+                        return true;
+                    }
+
+                    try {
+                        arena.getArenaEcon().setKillMoney(Integer.valueOf(args[3]));
+                        sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s kill gold updated to " + args[3]);
+                    } catch (Exception ex){
+                        sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
+                    }
+                }else if (arg1.equalsIgnoreCase("moneyOnDeath")){
+                    if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
+                        sender.sendMessage(ChatColor.RED + "Access denied.");
+                        return true;
+                    }
+                    if (args.length < 4){
+                        sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the death money!.");
+                        sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getDeathMoney());
+                        return true;
+                    }
+
+                    try {
+                        arena.getArenaEcon().setDeathMoney(Integer.valueOf(args[3]));
+                        sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s death gold updated to " + args[3]);
+                    } catch (Exception ex){
+                        sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
+                    }
+                }else if (arg1.equalsIgnoreCase("moneyForJoin")){
+                    if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
+                        sender.sendMessage(ChatColor.RED + "Access denied.");
+                        return true;
+                    }
+                    if (args.length < 4){
+                        sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the join cost!.");
+                        sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getJoinMoney());
+                        return true;
+                    }
+
+                    try {
+                        arena.getArenaEcon().setJoinMoney(Integer.valueOf(args[3]));
+                        sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s join cost updated to " + args[3]);
+                    } catch (Exception ex){
+                        sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
+                    }
                 } else {
                     sender.sendMessage(ChatColor.RED + "You have entered an incorrect parameter (" + action + ").");
                 }
@@ -1001,60 +1052,7 @@ public class Main extends JavaPlugin implements Listener{
                 }
                 dapi.removeArena(dapi.getArena(ArenaName));
                 sender.sendMessage(ChatColor.BLUE + "Done, but you will still need to delete /kitpvp/arenas/" + ArenaName + ".arena");
-            }else if (arg1.equalsIgnoreCase("moneyOnKill")){
-                if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
-                    sender.sendMessage(ChatColor.RED + "Access denied.");
-                    return true;
-                }
-                Arena arena = dapi.getArena(args[2]);
-                if (args.length < 4){
-                    sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the kill money!.");
-                    sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getKillMoney());
-                    return true;
-                }
 
-                try {
-                    arena.getArenaEcon().setKillMoney(Integer.valueOf(args[3]));
-                    sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s kill gold updated to " + args[3]);
-                } catch (Exception ex){
-                    sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
-                }
-            }else if (arg1.equalsIgnoreCase("moneyOnDeath")){
-                if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
-                    sender.sendMessage(ChatColor.RED + "Access denied.");
-                    return true;
-                }
-                Arena arena = dapi.getArena(args[2]);
-                if (args.length < 4){
-                    sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the death money!.");
-                    sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getDeathMoney());
-                    return true;
-                }
-
-                try {
-                    arena.getArenaEcon().setDeathMoney(Integer.valueOf(args[3]));
-                    sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s death gold updated to " + args[3]);
-                } catch (Exception ex){
-                    sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
-                }
-            }else if (arg1.equalsIgnoreCase("moneyForJoin")){
-                if (!(sender.hasPermission("kitpvp.modifyEconomy"))){
-                    sender.sendMessage(ChatColor.RED + "Access denied.");
-                    return true;
-                }
-                Arena arena = dapi.getArena(args[2]);
-                if (args.length < 4){
-                    sender.sendMessage(ChatColor.RED + "Not enough arguments - you need to specify a value for the join cost!.");
-                    sender.sendMessage(ChatColor.RED + "The current vaule is " + ChatColor.AQUA + arena.getArenaEcon().getJoinMoney());
-                    return true;
-                }
-
-                try {
-                    arena.getArenaEcon().setJoinMoney(Integer.valueOf(args[3]));
-                    sender.sendMessage(ChatColor.GREEN + "Success!  " + arena.getName() + "'s join cost updated to " + args[3]);
-                } catch (Exception ex){
-                    sender.sendMessage(ChatColor.RED + "Failure.  Maybe " + args[3] + " isn't a whole number (integer)?");
-                }
             }else{
                 sender.sendMessage(ChatColor.RED + "Unknown KitPvP command.  Displaying help.");
                 sender.sendMessage(ChatColor.GREEN + "=-=-=-= =-= KitPvP help =-= =-=-=-=");
